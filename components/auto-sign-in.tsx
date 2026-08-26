@@ -17,8 +17,7 @@ export default function AutoSignIn() {
         return
       }
       setStatus('Signed in! Loading...')
-      // Re-runs the server component (app/page.tsx) now that a
-      // session cookie exists, so it picks up the logged-in state.
+      // re-runs server component (app/page.tsx) now that session cookie exists, picks up logged-in state
       router.refresh()
     })
   }, [router])

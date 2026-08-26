@@ -7,15 +7,13 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // No session yet — hand off to the client component to sign in
-  // anonymously, then this server component re-runs via router.refresh().
+  // no session yet; hand off to client component to sign in anon, then server component re-runs via router.refresh().
   if (!user) {
     return <AutoSignIn />
   }
 
-  // Prove a real, RLS-protected read against the puzzles table works.
-  // Count will be 0 right now since no puzzles have been created yet —
-  // that's expected and fine, it's the connection we're testing.
+  // prove a real, RLS-protected read against the puzzles table works.
+  // count will be 0 since no puzzles created yet
   const { count, error } = await supabase
     .from('puzzles')
     .select('*', { count: 'exact', head: true })
