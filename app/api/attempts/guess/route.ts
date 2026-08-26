@@ -14,7 +14,6 @@ interface GuessComparison {
   color: 'correct' | 'absent'
 }
  
-// Ordered oldest -> newest. Extend this list as new generations release.
 const GENERATION_ORDER = [
   'generation-i', 'generation-ii', 'generation-iii', 'generation-iv',
   'generation-v', 'generation-vi', 'generation-vii', 'generation-viii',
@@ -50,6 +49,26 @@ function buildComparison(guess: HintData, answer: HintData): GuessComparison {
     height: compareOrdinal(guess.height, answer.height),
     weight: compareOrdinal(guess.weight, answer.weight),
     color: guess.color === answer.color ? 'correct' : 'absent',
+  }
+}
+ 
+interface GuessAttributes {
+  type1: string
+  type2: string | null
+  generation: string
+  height: number
+  weight: number
+  color: string
+}
+ 
+function extractAttributes(pokemon: HintData): GuessAttributes {
+  return {
+    type1: pokemon.types[0],
+    type2: pokemon.types[1] ?? null,
+    generation: pokemon.generation,
+    height: pokemon.height,
+    weight: pokemon.weight,
+    color: pokemon.color,
   }
 }
  
@@ -118,6 +137,7 @@ export async function POST(request: Request) {
  
   const succeeded = guessData.name === answerData.name
   const comparison = buildComparison(guessData, answerData)
+  const attributes = extractAttributes(guessData)
  
   const priorGuesses = existingAttempt?.guesses ?? []
   const newGuesses = [
@@ -125,6 +145,7 @@ export async function POST(request: Request) {
     {
       guess: guessData.name,
       sprite_url: guessData.spriteUrl,
+      attributes,
       comparison,
       guessed_at: new Date().toISOString(),
     },
@@ -150,11 +171,11 @@ export async function POST(request: Request) {
   return NextResponse.json({
     guessName: guessData.name,
     spriteUrl: guessData.spriteUrl,
+    attributes,
     comparison,
     completed: succeeded,
     succeeded,
     guessesUsed: newGuesses.length,
-    // Only reveal the answer's identity once solved.
     answer: succeeded ? answerData.name : undefined,
   })
 }

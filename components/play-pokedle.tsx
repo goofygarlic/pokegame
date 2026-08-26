@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 type TypeComparison = 'correct' | 'present' | 'absent'
 type ExactOrDirection = 'correct' | 'higher' | 'lower'
@@ -14,14 +14,25 @@ interface Comparison {
   color: 'correct' | 'absent'
 }
 
+interface Attributes {
+  type1: string
+  type2: string | null
+  generation: string
+  height: number
+  weight: number
+  color: string
+}
+
 interface Guess {
   guess: string
   sprite_url: string | null
+  attributes: Attributes
   comparison: Comparison
 }
 
 interface PlayPokedleProps {
   puzzleId: string
+  pokemonNames: string[]
   initialGuesses: Guess[]
   initialCompleted: boolean
   initialSucceeded: boolean | null
@@ -36,51 +47,75 @@ const CELL_COLORS: Record<string, string> = {
 }
 
 function directionArrow(value: ExactOrDirection): string {
-  if (value === 'higher') return '↑'
-  if (value === 'lower') return '↓'
+  if (value === 'higher') return ' ↑'
+  if (value === 'lower') return ' ↓'
   return ''
 }
 
-function Cell({ label, value }: { label: string; value: string }) {
+function formatGeneration(gen: string): string {
+  return gen.replace('generation-', '').toUpperCase()
+}
+
+function Cell({ label, status }: { label: string; status: string }) {
   return (
     <div
       style={{
-        width: 72,
-        height: 56,
+        width: 90,
+        height: 60,
         display: 'flex',
-        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         color: 'white',
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: 'bold',
         textTransform: 'capitalize',
-        backgroundColor: CELL_COLORS[value] ?? '#787c7e',
+        backgroundColor: CELL_COLORS[status] ?? '#787c7e',
         borderRadius: 4,
+        textAlign: 'center',
+        padding: '0 4px',
       }}
     >
-      <span>{label}</span>
+      {label}
     </div>
   )
 }
 
 export default function PlayPokedle({
   puzzleId,
+  pokemonNames,
   initialGuesses,
   initialCompleted,
   initialSucceeded,
 }: PlayPokedleProps) {
   const [guesses, setGuesses] = useState<Guess[]>(initialGuesses)
-  const [currentGuess, setCurrentGuess] = useState('')
+  const [query, setQuery] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [completed, setCompleted] = useState(initialCompleted)
   const [succeeded, setSucceeded] = useState<boolean | null>(initialSucceeded)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  const filteredNames = useMemo(() => {
+    if (query.trim().length === 0) return []
+    const q = query.toLowerCase()
+    return pokemonNames.filter((name) => name.includes(q)).slice(0, 8)
+  }, [query, pokemonNames])
+
+  function selectName(name: string) {
+    setQuery(name)
+    setShowSuggestions(false)
+  }
+
   async function submitGuess() {
     setError(null)
 
-    if (currentGuess.trim().length === 0) return
+    const trimmed = query.trim().toLowerCase()
+    if (trimmed.length === 0) return
+
+    if (!pokemonNames.includes(trimmed)) {
+      setError('Select a Pokemon from the dropdown list')
+      return
+    }
 
     setSubmitting(true)
 
@@ -88,7 +123,7 @@ export default function PlayPokedle({
       const res = await fetch('/api/attempts/guess', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ puzzleId, guess: currentGuess }),
+        body: JSON.stringify({ puzzleId, guess: trimmed }),
       })
 
       const data = await res.json()
@@ -103,72 +138,127 @@ export default function PlayPokedle({
         {
           guess: data.guessName,
           sprite_url: data.spriteUrl,
+          attributes: data.attributes,
           comparison: data.comparison,
         },
       ])
       setCompleted(data.completed)
       setSucceeded(data.succeeded)
-      setCurrentGuess('')
+      setQuery('')
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <div style={{ fontFamily: 'sans-serif', maxWidth: 600 }}>
+    <div style={{ fontFamily: 'sans-serif', maxWidth: 700 }}>
       <div style={{ display: 'flex', gap: 4, marginBottom: 8, fontSize: 12, color: '#999' }}>
-        <div style={{ width: 72 }}>Pokemon</div>
-        <div style={{ width: 72 }}>Type 1</div>
-        <div style={{ width: 72 }}>Type 2</div>
-        <div style={{ width: 72 }}>Gen</div>
-        <div style={{ width: 72 }}>Height</div>
-        <div style={{ width: 72 }}>Weight</div>
-        <div style={{ width: 72 }}>Color</div>
+        <div style={{ width: 100 }}>Pokemon</div>
+        <div style={{ width: 90 }}>Type 1</div>
+        <div style={{ width: 90 }}>Type 2</div>
+        <div style={{ width: 90 }}>Gen</div>
+        <div style={{ width: 90 }}>Height</div>
+        <div style={{ width: 90 }}>Weight</div>
+        <div style={{ width: 90 }}>Color</div>
       </div>
 
       {guesses.map((g, i) => (
         <div key={i} style={{ display: 'flex', gap: 4, marginBottom: 4, alignItems: 'center' }}>
-          <div style={{ width: 72, textTransform: 'capitalize', fontSize: 13 }}>
+          <div
+            style={{
+              width: 100,
+              textTransform: 'capitalize',
+              fontSize: 13,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
             {g.sprite_url && (
-              <img src={g.sprite_url} alt={g.guess} width={32} height={32} />
+              <img src={g.sprite_url} alt={g.guess} width={64} height={64} />
             )}
             {g.guess}
           </div>
-          <Cell label={g.comparison.type1} value={g.comparison.type1} />
-          <Cell label={g.comparison.type2} value={g.comparison.type2} />
+          <Cell label={g.attributes.type1} status={g.comparison.type1} />
+          <Cell label={g.attributes.type2 ?? 'None'} status={g.comparison.type2} />
           <Cell
-            label={`${g.comparison.generation} ${directionArrow(g.comparison.generation)}`}
-            value={g.comparison.generation}
+            label={`${formatGeneration(g.attributes.generation)}${directionArrow(g.comparison.generation)}`}
+            status={g.comparison.generation}
           />
           <Cell
-            label={`${g.comparison.height} ${directionArrow(g.comparison.height)}`}
-            value={g.comparison.height}
+            label={`${g.attributes.height}${directionArrow(g.comparison.height)}`}
+            status={g.comparison.height}
           />
           <Cell
-            label={`${g.comparison.weight} ${directionArrow(g.comparison.weight)}`}
-            value={g.comparison.weight}
+            label={`${g.attributes.weight}${directionArrow(g.comparison.weight)}`}
+            status={g.comparison.weight}
           />
-          <Cell label={g.comparison.color} value={g.comparison.color} />
+          <Cell label={g.attributes.color} status={g.comparison.color} />
         </div>
       ))}
 
       {completed ? (
         <p style={{ marginTop: 16 }}>
-          {succeeded ? 'Puzzle Complete!' : 'Puzzle complete.'}
+          {succeeded ? 'Solved it! 🎉' : 'Puzzle complete.'}
         </p>
       ) : (
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <input
-            value={currentGuess}
-            onChange={(e) => setCurrentGuess(e.target.value)}
-            disabled={submitting}
-            placeholder="Enter a Pokemon name"
-            style={{ padding: 8, flex: 1 }}
-            onKeyDown={(e) => e.key === 'Enter' && submitGuess()}
-          />
-          <button onClick={submitGuess} disabled={submitting}>
-            Guess
-          </button>
+        <div style={{ position: 'relative', marginTop: 16, maxWidth: 300 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                setShowSuggestions(true)
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              disabled={submitting}
+              placeholder="Type a Pokemon name..."
+              style={{ padding: 8, flex: 1 }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submitGuess()
+                if (e.key === 'Escape') setShowSuggestions(false)
+              }}
+            />
+            <button onClick={submitGuess} disabled={submitting}>
+              Guess
+            </button>
+          </div>
+
+          {showSuggestions && filteredNames.length > 0 && (
+            <ul
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                margin: 0,
+                padding: 0,
+                listStyle: 'none',
+                background: 'white',
+                border: '1px solid #ccc',
+                borderRadius: 4,
+                zIndex: 10,
+                maxHeight: 200,
+                overflowY: 'auto',
+              }}
+            >
+              {filteredNames.map((name) => (
+                <li
+                  key={name}
+                  onClick={() => selectName(name)}
+                  style={{
+                    padding: 8,
+                    cursor: 'pointer',
+                    textTransform: 'capitalize',
+                    color: '#111',
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  {name}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 

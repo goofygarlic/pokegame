@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getAllPokemonNames } from '@/lib/pokeapi'
 import AutoSignIn from '@/components/auto-sign-in'
 import PlayPokedle from '@/components/play-pokedle'
 
@@ -29,16 +30,18 @@ export default async function PlayPuzzle({
   }
 
   if (puzzle.type !== 'pokedle') {
-    // guess_the_mon rendering will be added separately
     return <p>This puzzle type isn't supported yet.</p>
   }
 
-  const { data: existingAttempt } = await supabase
-    .from('attempts')
-    .select('guesses, completed, succeeded')
-    .eq('puzzle_id', puzzleId)
-    .eq('user_id', user.id)
-    .maybeSingle()
+  const [{ data: existingAttempt }, pokemonNames] = await Promise.all([
+    supabase
+      .from('attempts')
+      .select('guesses, completed, succeeded')
+      .eq('puzzle_id', puzzleId)
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    getAllPokemonNames(supabase),
+  ])
 
   return (
     <main style={{ padding: '2rem' }}>
@@ -47,6 +50,7 @@ export default async function PlayPuzzle({
 
       <PlayPokedle
         puzzleId={puzzle.id}
+        pokemonNames={pokemonNames}
         initialGuesses={existingAttempt?.guesses ?? []}
         initialCompleted={existingAttempt?.completed ?? false}
         initialSucceeded={existingAttempt?.succeeded ?? null}

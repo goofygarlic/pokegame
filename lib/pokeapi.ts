@@ -115,20 +115,7 @@ async function fetchHintDataFromPokeApi(slug: string): Promise<HintData> {
     typeMatchups,
   }
 }
- 
-/**
- * Returns everything needed to render hints for a 'guess_the_mon'
- * puzzle for the given species slug (e.g. "pikachu").
- *
- * Checks the pokemon_cache table first. On cache miss, fetches from
- * PokeAPI, stores the result, and returns it — so every species is
- * only ever fetched from PokeAPI once across your whole app's
- * lifetime.
- *
- * Pass any Supabase client (browser or server) that has an active
- * session — anonymous sessions are fine, per the pokemon_cache RLS
- * policies.
- */
+
 export async function getHintData(
   slug: string,
   supabase: SupabaseClient
@@ -158,4 +145,41 @@ export async function getHintData(
   }
  
   return hintData
+}
+ 
+export async function getAllPokemonNames(supabase: SupabaseClient): Promise<string[]> {
+  const CACHE_KEY = '_all_pokemon_species_names'
+ 
+  const { data: cached, error: readError } = await supabase
+    .from('pokemon_cache')
+    .select('data')
+    .eq('species_slug', CACHE_KEY)
+    .maybeSingle()
+ 
+  if (readError) {
+    console.error('pokemon species list cache read failed:', readError.message)
+  }
+ 
+  if (cached) {
+    return cached.data.names as string[]
+  }
+ 
+  const res = await fetch(`${POKEAPI_BASE}/pokemon-species?limit=2000`)
+  if (!res.ok) {
+    throw new Error(`PokeAPI species list request failed (${res.status})`)
+  }
+  const listData = await res.json()
+  const names: string[] = listData.results
+    .map((r: any) => r.name as string)
+    .sort()
+ 
+  const { error: writeError } = await supabase
+    .from('pokemon_cache')
+    .upsert({ species_slug: CACHE_KEY, data: { names } })
+ 
+  if (writeError) {
+    console.error('pokemon species list cache write failed:', writeError.message)
+  }
+ 
+  return names
 }
