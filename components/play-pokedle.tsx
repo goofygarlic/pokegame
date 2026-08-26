@@ -2,28 +2,70 @@
 
 import { useState } from 'react'
 
-type Feedback = 'correct' | 'present' | 'absent'
-type Guess = { guess: string; feedback: Feedback[] }
+type TypeComparison = 'correct' | 'present' | 'absent'
+type ExactOrDirection = 'correct' | 'higher' | 'lower'
+
+interface Comparison {
+  type1: TypeComparison
+  type2: TypeComparison
+  generation: ExactOrDirection
+  height: ExactOrDirection
+  weight: ExactOrDirection
+  color: 'correct' | 'absent'
+}
+
+interface Guess {
+  guess: string
+  sprite_url: string | null
+  comparison: Comparison
+}
 
 interface PlayPokedleProps {
   puzzleId: string
-  pokemonLength: number
-  maxGuesses: number
   initialGuesses: Guess[]
   initialCompleted: boolean
   initialSucceeded: boolean | null
 }
 
-const FEEDBACK_COLORS: Record<Feedback, string> = {
+const CELL_COLORS: Record<string, string> = {
   correct: '#6aaa64',
   present: '#c9b458',
   absent: '#787c7e',
+  higher: '#c9b458',
+  lower: '#c9b458',
+}
+
+function directionArrow(value: ExactOrDirection): string {
+  if (value === 'higher') return '↑'
+  if (value === 'lower') return '↓'
+  return ''
+}
+
+function Cell({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        width: 72,
+        height: 56,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        fontSize: 12,
+        fontWeight: 'bold',
+        textTransform: 'capitalize',
+        backgroundColor: CELL_COLORS[value] ?? '#787c7e',
+        borderRadius: 4,
+      }}
+    >
+      <span>{label}</span>
+    </div>
+  )
 }
 
 export default function PlayPokedle({
   puzzleId,
-  pokemonLength,
-  maxGuesses,
   initialGuesses,
   initialCompleted,
   initialSucceeded,
@@ -32,17 +74,13 @@ export default function PlayPokedle({
   const [currentGuess, setCurrentGuess] = useState('')
   const [completed, setCompleted] = useState(initialCompleted)
   const [succeeded, setSucceeded] = useState<boolean | null>(initialSucceeded)
-  const [answer, setAnswer] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   async function submitGuess() {
     setError(null)
 
-    if (currentGuess.length !== pokemonLength) {
-      setError(`Guess must be ${pokemonLength} letters`)
-      return
-    }
+    if (currentGuess.trim().length === 0) return
 
     setSubmitting(true)
 
@@ -62,11 +100,14 @@ export default function PlayPokedle({
 
       setGuesses((prev) => [
         ...prev,
-        { guess: currentGuess.toLowerCase(), feedback: data.feedback },
+        {
+          guess: data.guessName,
+          sprite_url: data.spriteUrl,
+          comparison: data.comparison,
+        },
       ])
       setCompleted(data.completed)
       setSucceeded(data.succeeded)
-      if (data.answer) setAnswer(data.answer)
       setCurrentGuess('')
     } finally {
       setSubmitting(false)
@@ -74,47 +115,56 @@ export default function PlayPokedle({
   }
 
   return (
-    <div style={{ fontFamily: 'sans-serif', maxWidth: 400 }}>
-      <div style={{ marginBottom: 16 }}>
-        {guesses.map((g, i) => (
-          <div key={i} style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
-            {g.guess.split('').map((letter, j) => (
-              <div
-                key={j}
-                style={{
-                  width: 40,
-                  height: 40,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  textTransform: 'uppercase',
-                  backgroundColor: FEEDBACK_COLORS[g.feedback[j]],
-                }}
-              >
-                {letter}
-              </div>
-            ))}
-          </div>
-        ))}
+    <div style={{ fontFamily: 'sans-serif', maxWidth: 600 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 8, fontSize: 12, color: '#999' }}>
+        <div style={{ width: 72 }}>Pokemon</div>
+        <div style={{ width: 72 }}>Type 1</div>
+        <div style={{ width: 72 }}>Type 2</div>
+        <div style={{ width: 72 }}>Gen</div>
+        <div style={{ width: 72 }}>Height</div>
+        <div style={{ width: 72 }}>Weight</div>
+        <div style={{ width: 72 }}>Color</div>
       </div>
 
+      {guesses.map((g, i) => (
+        <div key={i} style={{ display: 'flex', gap: 4, marginBottom: 4, alignItems: 'center' }}>
+          <div style={{ width: 72, textTransform: 'capitalize', fontSize: 13 }}>
+            {g.sprite_url && (
+              <img src={g.sprite_url} alt={g.guess} width={32} height={32} />
+            )}
+            {g.guess}
+          </div>
+          <Cell label={g.comparison.type1} value={g.comparison.type1} />
+          <Cell label={g.comparison.type2} value={g.comparison.type2} />
+          <Cell
+            label={`${g.comparison.generation} ${directionArrow(g.comparison.generation)}`}
+            value={g.comparison.generation}
+          />
+          <Cell
+            label={`${g.comparison.height} ${directionArrow(g.comparison.height)}`}
+            value={g.comparison.height}
+          />
+          <Cell
+            label={`${g.comparison.weight} ${directionArrow(g.comparison.weight)}`}
+            value={g.comparison.weight}
+          />
+          <Cell label={g.comparison.color} value={g.comparison.color} />
+        </div>
+      ))}
+
       {completed ? (
-        <p>
-          {succeeded
-            ? 'Solved it! 🎉'
-            : `Out of guesses. The answer was ${answer ?? '???'}.`}
+        <p style={{ marginTop: 16 }}>
+          {succeeded ? 'Solved it! 🎉' : 'Puzzle complete.'}
         </p>
       ) : (
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <input
             value={currentGuess}
-            onChange={(e) => setCurrentGuess(e.target.value.toLowerCase())}
-            maxLength={pokemonLength}
+            onChange={(e) => setCurrentGuess(e.target.value)}
             disabled={submitting}
-            placeholder={`${pokemonLength}-letter Pokemon name`}
+            placeholder="Enter a Pokemon name"
             style={{ padding: 8, flex: 1 }}
+            onKeyDown={(e) => e.key === 'Enter' && submitGuess()}
           />
           <button onClick={submitGuess} disabled={submitting}>
             Guess
@@ -122,10 +172,8 @@ export default function PlayPokedle({
         </div>
       )}
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <p style={{ marginTop: 8, color: '#666' }}>
-        {guesses.length} / {maxGuesses} guesses used
-      </p>
+      {error && <p style={{ color: 'red', marginTop: 8 }}>{error}</p>}
+      <p style={{ marginTop: 8, color: '#666' }}>{guesses.length} guesses made</p>
     </div>
   )
 }
