@@ -18,7 +18,7 @@ export default async function DailyPuzzle() {
   if (!puzzle) {
     return (
       <main style={{ padding: '2rem' }}>
-        <p>No daily puzzle yet — check back soon!</p>
+        <p>No daily puzzle yet, check back soon!</p>
       </main>
     )
   }

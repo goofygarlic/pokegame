@@ -199,7 +199,7 @@ export default function PlayPokedle({
 
       {completed ? (
         <p style={{ marginTop: 16 }}>
-          {succeeded ? 'Solved it! 🎉' : 'Puzzle complete.'}
+          {succeeded ? 'Solved it!' : 'Puzzle complete.'}
         </p>
       ) : (
         <div style={{ position: 'relative', marginTop: 16, maxWidth: 300 }}>
