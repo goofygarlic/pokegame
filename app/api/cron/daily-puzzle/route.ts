@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     .insert({
       creator_id: ADMIN_USER_ID,
       type: 'pokedle',
-      title: `Daily Pokedle — ${today}`,
+      title: `Pokedle: (${today})`,
       description: "Guess today's Pokemon!",
       published: true,
       daily_date: today,
