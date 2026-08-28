@@ -30,14 +30,14 @@ function compareType(guessType: string | undefined, answerTypes: string[], slot:
  
 function compareOrdinal(guessValue: number, answerValue: number): ExactOrDirection {
   if (guessValue === answerValue) return 'correct'
-  return guessValue < answerValue ? 'higher' : 'lower' // direction the ANSWER is relative to the guess
+  return guessValue < answerValue ? 'higher' : 'lower' // direction the ANSWER is relative to guess
 }
  
 function compareGeneration(guessGen: string, answerGen: string): ExactOrDirection {
   if (guessGen === answerGen) return 'correct'
   const guessIdx = GENERATION_ORDER.indexOf(guessGen)
   const answerIdx = GENERATION_ORDER.indexOf(answerGen)
-  if (guessIdx === -1 || answerIdx === -1) return 'correct' // unknown gen, don't guess a direction
+  if (guessIdx === -1 || answerIdx === -1) return 'correct' // unknown gen, don't guess direction
   return guessIdx < answerIdx ? 'higher' : 'lower'
 }
  
