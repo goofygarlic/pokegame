@@ -5,7 +5,7 @@ import { getPokemon } from '@/lib/pokeapi'
 const MAX_DEX_NUMBER = 1025 // update as new generations are added to PokeAPI
  
 function todayDateString(): string {
-  return new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
 }
  
 export async function GET(request: Request) {
