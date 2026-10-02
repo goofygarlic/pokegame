@@ -53,6 +53,7 @@ function buildComparison(guess: HintData, answer: HintData): GuessComparison {
 }
  
 interface GuessAttributes {
+  dexNumber: number
   type1: string
   type2: string | null
   generation: string
@@ -63,6 +64,7 @@ interface GuessAttributes {
  
 function extractAttributes(pokemon: HintData): GuessAttributes {
   return {
+    dexNumber: pokemon.id,
     type1: pokemon.types[0],
     type2: pokemon.types[1] ?? null,
     generation: pokemon.generation,

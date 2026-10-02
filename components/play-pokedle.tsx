@@ -1,9 +1,29 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Fraunces, Work_Sans, JetBrains_Mono } from 'next/font/google'
+import styles from './play-pokedle.module.css'
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  style: ['italic', 'normal'],
+  weight: ['500', '600'],
+  variable: '--font-display',
+})
+const workSans = Work_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-body',
+})
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-mono',
+})
 
 type TypeComparison = 'correct' | 'present' | 'absent'
 type ExactOrDirection = 'correct' | 'higher' | 'lower'
+type StatusClass = 'cellGood' | 'cellWarn' | 'cellBad'
 
 interface Comparison {
   type1: TypeComparison
@@ -15,6 +35,7 @@ interface Comparison {
 }
 
 interface Attributes {
+  dexNumber?: number
   type1: string
   type2: string | null
   generation: string
@@ -38,12 +59,10 @@ interface PlayPokedleProps {
   initialSucceeded: boolean | null
 }
 
-const CELL_COLORS: Record<string, string> = {
-  correct: '#6aaa64',
-  present: '#c9b458',
-  absent: '#787c7e',
-  higher: '#c9b458',
-  lower: '#c9b458',
+function statusClass(status: TypeComparison | ExactOrDirection | 'correct' | 'absent'): StatusClass {
+  if (status === 'correct') return 'cellGood'
+  if (status === 'present') return 'cellWarn'
+  return 'cellBad'
 }
 
 function directionArrow(value: ExactOrDirection): string {
@@ -56,26 +75,15 @@ function formatGeneration(gen: string): string {
   return gen.replace('generation-', '').toUpperCase()
 }
 
-function Cell({ label, status }: { label: string; status: string }) {
+function formatDex(dexNumber: number | undefined): string {
+  if (typeof dexNumber !== 'number') return '—'
+  return `No. ${String(dexNumber).padStart(3, '0')}`
+}
+
+function Cell({ label, status, dataLabel }: { label: string; status: StatusClass; dataLabel: string }) {
   return (
-    <div
-      style={{
-        width: 90,
-        height: 60,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'white',
-        fontSize: 13,
-        fontWeight: 'bold',
-        textTransform: 'capitalize',
-        backgroundColor: CELL_COLORS[status] ?? '#787c7e',
-        borderRadius: 4,
-        textAlign: 'center',
-        padding: '0 4px',
-      }}
-    >
-      {label}
+    <div className={`${styles.cell} ${styles[status]}`} data-label={dataLabel} role="cell">
+      <span className={styles.cellValue}>{label}</span>
     </div>
   )
 }
@@ -150,61 +158,19 @@ export default function PlayPokedle({
     }
   }
 
+  const answerGuess = succeeded ? guesses[guesses.length - 1] : null
+
   return (
-    <div style={{ fontFamily: 'sans-serif', maxWidth: 700 }}>
-      <div style={{ display: 'flex', gap: 4, marginBottom: 8, fontSize: 12, color: '#999' }}>
-        <div style={{ width: 100 }}>Pokemon</div>
-        <div style={{ width: 90 }}>Type 1</div>
-        <div style={{ width: 90 }}>Type 2</div>
-        <div style={{ width: 90 }}>Gen</div>
-        <div style={{ width: 90 }}>Height</div>
-        <div style={{ width: 90 }}>Weight</div>
-        <div style={{ width: 90 }}>Color</div>
-      </div>
-
-      {guesses.map((g, i) => (
-        <div key={i} style={{ display: 'flex', gap: 4, marginBottom: 4, alignItems: 'center' }}>
-          <div
-            style={{
-              width: 100,
-              textTransform: 'capitalize',
-              fontSize: 13,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
-          >
-            {g.sprite_url && (
-              <img src={g.sprite_url} alt={g.guess} width={64} height={64} />
-            )}
-            {g.guess}
-          </div>
-          <Cell label={g.attributes.type1} status={g.comparison.type1} />
-          <Cell label={g.attributes.type2 ?? 'None'} status={g.comparison.type2} />
-          <Cell
-            label={`${formatGeneration(g.attributes.generation)}${directionArrow(g.comparison.generation)}`}
-            status={g.comparison.generation}
-          />
-          <Cell
-            label={`${g.attributes.height}${directionArrow(g.comparison.height)}`}
-            status={g.comparison.height}
-          />
-          <Cell
-            label={`${g.attributes.weight}${directionArrow(g.comparison.weight)}`}
-            status={g.comparison.weight}
-          />
-          <Cell label={g.attributes.color} status={g.comparison.color} />
-        </div>
-      ))}
-
-      {completed ? (
-        <p style={{ marginTop: 16 }}>
-          {succeeded ? 'Solved it!' : 'Puzzle complete.'}
-        </p>
-      ) : (
-        <div style={{ position: 'relative', marginTop: 16, maxWidth: 300 }}>
-          <div style={{ display: 'flex', gap: 8 }}>
+    <div className={`${styles.board} ${fraunces.variable} ${workSans.variable} ${jetbrainsMono.variable}`}>
+      {!completed && (
+        <div className={styles.scanBar}>
+          <div className={styles.scanInputWrap}>
+            <label htmlFor="speciesInput" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>
+              Species name
+            </label>
             <input
+              id="speciesInput"
+              className={styles.scanInput}
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value)
@@ -212,58 +178,118 @@ export default function PlayPokedle({
               }}
               onFocus={() => setShowSuggestions(true)}
               disabled={submitting}
-              placeholder="Type a Pokemon name..."
-              style={{ padding: 8, flex: 1 }}
+              placeholder="Enter a species name…"
+              autoComplete="off"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') submitGuess()
                 if (e.key === 'Escape') setShowSuggestions(false)
               }}
             />
-            <button onClick={submitGuess} disabled={submitting}>
-              Guess
-            </button>
+
+            {showSuggestions && filteredNames.length > 0 && (
+              <ul className={styles.suggestList} role="listbox">
+                {filteredNames.map((name) => (
+                  <li
+                    key={name}
+                    className={styles.suggestItem}
+                    role="option"
+                    onClick={() => selectName(name)}
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
-          {showSuggestions && filteredNames.length > 0 && (
-            <ul
-              style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                right: 0,
-                margin: 0,
-                padding: 0,
-                listStyle: 'none',
-                background: 'white',
-                border: '1px solid #ccc',
-                borderRadius: 4,
-                zIndex: 10,
-                maxHeight: 200,
-                overflowY: 'auto',
-              }}
-            >
-              {filteredNames.map((name) => (
-                <li
-                  key={name}
-                  onClick={() => selectName(name)}
-                  style={{
-                    padding: 8,
-                    cursor: 'pointer',
-                    textTransform: 'capitalize',
-                    color: '#111',
-                  }}
-                  onMouseDown={(e) => e.preventDefault()}
-                >
-                  {name}
-                </li>
-              ))}
-            </ul>
-          )}
+          <button className={styles.scanButton} onClick={submitGuess} disabled={submitting}>
+            Guess
+          </button>
         </div>
       )}
 
-      {error && <p style={{ color: 'red', marginTop: 8 }}>{error}</p>}
-      <p style={{ marginTop: 8, color: '#666' }}>{guesses.length} guesses made</p>
+      {error && <p className={styles.formNote}>{error}</p>}
+
+      <div className={styles.ledgerWrap}>
+        <div className={styles.legend} aria-label="Legend">
+          <span className={`${styles.chip} ${styles.chipGood}`}>Correct</span>
+          <span className={`${styles.chip} ${styles.chipWarn}`}>Partial</span>
+          <span className={`${styles.chip} ${styles.chipBad}`}>Incorrect</span>
+        </div>
+
+        <div className={styles.ledger} role="table" aria-label="Guess comparison ledger">
+          <div className={styles.ledgerHead} role="row">
+            <span role="columnheader">Specimen</span>
+            <span role="columnheader">Type I</span>
+            <span role="columnheader">Type II</span>
+            <span role="columnheader">Gen</span>
+            <span role="columnheader">Height</span>
+            <span role="columnheader">Weight</span>
+            <span role="columnheader">Color</span>
+          </div>
+
+          <div className={styles.ledgerBody} aria-live="polite">
+            {guesses.map((g, i) => (
+              <div key={i} className={styles.row} role="row">
+                <div className={`${styles.cell} ${styles.specimen}`} data-label="Specimen" role="cell">
+                  {g.sprite_url && (
+                    <img className={styles.sprite} src={g.sprite_url} alt={g.guess} width={44} height={44} />
+                  )}
+                  <span className={styles.tagText}>
+                    <span className={styles.dex}>{formatDex(g.attributes.dexNumber)}</span>
+                    <span className={styles.name}>{g.guess}</span>
+                  </span>
+                </div>
+
+                <Cell label={g.attributes.type1} status={statusClass(g.comparison.type1)} dataLabel="Type I" />
+                <Cell label={g.attributes.type2 ?? '—'} status={statusClass(g.comparison.type2)} dataLabel="Type II" />
+                <Cell
+                  label={`${formatGeneration(g.attributes.generation)}${directionArrow(g.comparison.generation)}`}
+                  status={statusClass(g.comparison.generation)}
+                  dataLabel="Gen"
+                />
+                <Cell
+                  label={`${g.attributes.height}m${directionArrow(g.comparison.height)}`}
+                  status={statusClass(g.comparison.height)}
+                  dataLabel="Height"
+                />
+                <Cell
+                  label={`${g.attributes.weight}kg${directionArrow(g.comparison.weight)}`}
+                  status={statusClass(g.comparison.weight)}
+                  dataLabel="Weight"
+                />
+                <Cell label={g.attributes.color} status={statusClass(g.comparison.color)} dataLabel="Color" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {completed && (
+        succeeded && answerGuess ? (
+          <div className={styles.resultCard}>
+            <span className={styles.resultArt}>
+              {answerGuess.sprite_url && (
+                <img src={answerGuess.sprite_url} alt={answerGuess.guess} width={96} height={96} />
+              )}
+            </span>
+            <span className={styles.resultInfo}>
+              <span className={styles.resultDex}>{formatDex(answerGuess.attributes.dexNumber)}</span>
+              <span className={styles.resultName}>{answerGuess.guess}</span>
+              <span className={styles.resultTries}>
+                Solved in {guesses.length} guess{guesses.length === 1 ? '' : 'es'}
+              </span>
+            </span>
+          </div>
+        ) : (
+          <p className={styles.footerNote}>Puzzle complete.</p>
+        )
+      )}
+
+      <p className={styles.footerNote}>
+        {guesses.length} guess{guesses.length === 1 ? '' : 'es'} made
+      </p>
     </div>
   )
 }

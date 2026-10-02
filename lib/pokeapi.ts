@@ -31,6 +31,7 @@ export interface TypeMatchups {
 }
  
 export interface HintData {
+  id: number
   name: string
   baseExperience: number
   height: number
@@ -102,6 +103,7 @@ async function fetchHintDataFromPokeApi(slug: string): Promise<HintData> {
   const typeMatchups = await Promise.all(pokemon.types.map(getTypeMatchups))
  
   return {
+    id: pokemon.id,
     name: pokemon.name,
     baseExperience: pokemon.baseExperience,
     height: pokemon.height,
@@ -130,7 +132,7 @@ export async function getHintData(
     console.error('pokemon_cache read failed:', readError.message)
   }
  
-  if (cached) {
+  if (cached && typeof cached.data?.id === 'number') {
     return cached.data as HintData
   }
  
