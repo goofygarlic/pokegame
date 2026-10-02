@@ -187,7 +187,7 @@ export default function PlayPokedle({
       </header>
 
       {description && <p className={styles.tagline}>{description}</p>}
-      
+
       {!completed && (
         <div className={styles.scanBar}>
           <div className={styles.scanInputWrap}>
@@ -312,10 +312,6 @@ export default function PlayPokedle({
           <p className={styles.footerNote}>Puzzle complete.</p>
         )
       )}
-
-      <p className={styles.footerNote}>
-        {guesses.length} guess{guesses.length === 1 ? '' : 'es'} made
-      </p>
     </div>
   )
 }
