@@ -246,7 +246,7 @@ export default function PlayPokedle({
 
         <div className={styles.ledger} role="table" aria-label="Guess comparison ledger">
           <div className={styles.ledgerHead} role="row">
-            <span role="columnheader">Specimen</span>
+            <span role="columnheader">Pokemon</span>
             <span role="columnheader">Type I</span>
             <span role="columnheader">Type II</span>
             <span role="columnheader">Gen</span>
