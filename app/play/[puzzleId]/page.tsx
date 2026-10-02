@@ -21,7 +21,7 @@ export default async function PlayPuzzle({
 
   const { data: puzzle, error: puzzleError } = await supabase
     .from('puzzles')
-    .select('id, title, description, type')
+    .select('id, title, description, type, daily_date')
     .eq('id', puzzleId)
     .single()
 
@@ -45,11 +45,10 @@ export default async function PlayPuzzle({
 
   return (
     <main style={{ padding: '2rem' }}>
-      <h1>{puzzle.title}</h1>
-      {puzzle.description && <p>{puzzle.description}</p>}
-
       <PlayPokedle
         puzzleId={puzzle.id}
+        dailyDate={puzzle.daily_date}
+        description={puzzle.description}
         pokemonNames={pokemonNames}
         initialGuesses={existingAttempt?.guesses ?? []}
         initialCompleted={existingAttempt?.completed ?? false}

@@ -53,10 +53,20 @@ interface Guess {
 
 interface PlayPokedleProps {
   puzzleId: string
+  dailyDate: string | null
+  description: string | null
   pokemonNames: string[]
   initialGuesses: Guess[]
   initialCompleted: boolean
   initialSucceeded: boolean | null
+}
+
+function formatDailyDate(dailyDate: string | null): string | null {
+  if (!dailyDate) return null
+
+  const date = new Date(`${dailyDate}T:00:00:00`)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})
 }
 
 function statusClass(status: TypeComparison | ExactOrDirection | 'correct' | 'absent'): StatusClass {
@@ -90,6 +100,8 @@ function Cell({ label, status, dataLabel }: { label: string; status: StatusClass
 
 export default function PlayPokedle({
   puzzleId,
+  dailyDate,
+  description,
   pokemonNames,
   initialGuesses,
   initialCompleted,
@@ -159,9 +171,23 @@ export default function PlayPokedle({
   }
 
   const answerGuess = succeeded ? guesses[guesses.length - 1] : null
+  const formattedDate = formatDailyDate(dailyDate)
 
   return (
     <div className={`${styles.board} ${fraunces.variable} ${workSans.variable} ${jetbrainsMono.variable}`}>
+      <header className={styles.masthead}>
+        <span className={styles.brandName}>Pokédle</span>
+        <div className={styles.meta}>
+          {formattedDate && <span>{formattedDate}</span>}
+          {formattedDate && <span className={styles.metaDivider}>·</span>}
+          <span>
+            <strong>{guesses.length}</strong> logged
+          </span>
+        </div>
+      </header>
+
+      {description && <p className={styles.tagline}>{description}</p>}
+      
       {!completed && (
         <div className={styles.scanBar}>
           <div className={styles.scanInputWrap}>
