@@ -181,7 +181,7 @@ export default function PlayPokedle({
           {formattedDate && <span>{formattedDate}</span>}
           {formattedDate && <span className={styles.metaDivider}>·</span>}
           <span>
-            <strong>{guesses.length}</strong> logged
+            <strong>{guesses.length}</strong> guesses
           </span>
         </div>
       </header>
