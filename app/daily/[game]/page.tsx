@@ -37,15 +37,6 @@ export default async function DailyGame({
     .maybeSingle()
 
   if (!puzzle) {
-    // Guess the Pokémon isn't live yet, so it shows its coming-soon card.
-    if (type === 'guess_the_mon') {
-      return (
-        <main style={{ padding: '2rem' }}>
-          <PlayGuessTheMon />
-        </main>
-      )
-    }
-
     return (
       <main style={{ padding: '2rem' }}>
         <p>No daily puzzle yet, check back soon!</p>

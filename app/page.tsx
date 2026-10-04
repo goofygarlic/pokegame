@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import SiteHeader from '@/components/site-header'
+import { BALL_TIERS, ballSpriteUrl } from '@/lib/guess-the-mon-config'
 import styles from './home.module.css'
 
 const SAMPLE_ROW = ['good', 'warn', 'good', 'bad', 'bad', 'good'] as const
@@ -35,13 +36,19 @@ export default function Home() {
         </article>
 
         <article className={styles.card}>
-          <span className={styles.eyebrow}>Coming soon</span>
+          <span className={styles.eyebrow}>Daily</span>
           <h2 className={styles.cardTitle}>Guess the Pokémon</h2>
           <p className={styles.cardText}>
-            Name the Pokémon from a set of hints, revealing more clues as you go.
+            Reveal hints like its weaknesses, egg groups, or cry, then name the Pokémon. Use fewer hints to earn a
+            better ball.
           </p>
-          <Link href="daily/guess-the-mon" className={styles.secondaryButton}>
-            Preview
+          <div className={styles.balls} aria-hidden="true">
+            {BALL_TIERS.map((tier) => (
+              <img key={tier.item} src={ballSpriteUrl(tier)} alt="" width={28} height={28} />
+            ))}
+          </div>
+          <Link href="/daily/guess-the-mon" className={styles.primaryButton}>
+            Play Guess the Pokémon
           </Link>
         </article>
       </section>
