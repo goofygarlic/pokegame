@@ -15,7 +15,7 @@
 
   font-family: var(--font-body), 'Work Sans', 'Segoe UI', system-ui, sans-serif;
   color: var(--ink);
-  max-width: 760px;
+  max-width: 860px;
   margin-inline: auto;
   display: flex;
   flex-direction: column;
@@ -244,7 +244,7 @@
 .ledgerHead,
 .row {
   display: grid;
-  grid-template-columns: minmax(150px, 1.3fr) repeat(6, minmax(84px, 1fr));
+  grid-template-columns: minmax(195px, 1.6fr) repeat(6, minmax(84px, 1fr));
   gap: 1px;
 }
 
