@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { rateLimit } from '@/lib/rate-limit'
 import { getGuessTheMonData, loadGuessTheMon } from '@/lib/guess-the-mon'
 
 // Streams the answer's cry through our own server. The original file URL
@@ -14,6 +15,8 @@ export async function GET(request: Request) {
   if (!user) {
     return NextResponse.json({ error: 'Not signed in' }, { status: 401 })
   }
+  const limited = await rateLimit(request, 'guess', user.id)
+  if (limited) return limited
 
   const puzzleId = new URL(request.url).searchParams.get('puzzleId')
   if (!puzzleId) {

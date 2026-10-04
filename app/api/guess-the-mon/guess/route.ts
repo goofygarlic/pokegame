@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { rateLimit } from '@/lib/rate-limit'
 import { getAllPokemonNames } from '@/lib/pokeapi'
 import { calculatePoints } from '@/lib/guess-the-mon-config'
 import {
@@ -28,6 +29,8 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: 'Not signed in' }, { status: 401 })
   }
+  const limited = await rateLimit(request, 'guess', user.id)
+  if (limited) return limited
 
   const body = await request.json().catch(() => null)
   const puzzleId = body?.puzzleId

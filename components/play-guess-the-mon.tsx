@@ -1,9 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import Link from 'next/link'
-import SiteHeader from './site-header'
-import styles from './play-guess-the-mon.module.css'
+import type { AnswerReveal } from '@/lib/guess-the-mon'
 import {
   BALL_TIERS,
   HINTS,
@@ -14,7 +11,10 @@ import {
   type HintKey,
   type HintValue,
 } from '@/lib/guess-the-mon-config'
-import type { AnswerReveal } from '@/lib/guess-the-mon'
+import Link from 'next/link'
+import { useMemo, useState } from 'react'
+import styles from './play-guess-the-mon.module.css'
+import SiteHeader from './site-header'
 
 interface PlayGuessTheMonProps {
   puzzleId: string
@@ -334,7 +334,7 @@ export default function PlayGuessTheMon({
 
                     {value?.kind === 'audio' &&
                       (cryFailed ? (
-                        <p className={styles.hintNote}>This browser can&apos;t play the cry.</p>
+                        <p className={styles.hintNote}>Couldn&apos;t play the cry. Try again in a minute, or use a different browser.</p>
                       ) : (
                         <audio
                           className={styles.cry}

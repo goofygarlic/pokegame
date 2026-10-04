@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { rateLimit } from '@/lib/rate-limit'
 import { getHintData, type HintData } from '@/lib/pokeapi'
  
 type ExactOrDirection = 'correct' | 'higher' | 'lower'
@@ -88,6 +89,9 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: 'Not signed in' }, { status: 401 })
   }
+
+  const limited = await rateLimit(request, 'guess', user.id)
+  if (limited) return limited
  
   const { puzzleId, guess } = await request.json()
  
