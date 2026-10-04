@@ -350,6 +350,10 @@
 .suggestItem:hover {
   background: var(--bg);
 }
+.suggestItemActive {
+  background: var(--bg);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
 
 .scanButton {
   flex: none;

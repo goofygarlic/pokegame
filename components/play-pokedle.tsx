@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import SiteHeader from './site-header'
 import styles from './play-pokedle.module.css'
+import { useSuggestionKeyboard } from '@/lib/use-suggestion-keyboard'
 
 type TypeComparison = 'correct' | 'present' | 'absent'
 type ExactOrDirection = 'correct' | 'higher' | 'lower'
@@ -190,6 +191,16 @@ export default function PlayPokedle({
     }
   }
 
+    const keyboard = useSuggestionKeyboard({
+    listId: 'speciesSuggestions',
+    suggestions: filteredNames,
+    open: showSuggestions,
+    onOpen: () => setShowSuggestions(true),
+    onClose: () => setShowSuggestions(false),
+    onPick: selectName,
+    onSubmit: submitGuess,
+  })
+
   const answerGuess = succeeded ? guesses[guesses.length - 1] : null
   const formattedDate = formatDailyDate(dailyDate)
 
@@ -241,19 +252,24 @@ export default function PlayPokedle({
               disabled={submitting}
               placeholder="Enter a species name…"
               autoComplete="off"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') submitGuess()
-                if (e.key === 'Escape') setShowSuggestions(false)
-              }}
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="speciesSuggestions"
+              aria-expanded={showSuggestions && filteredNames.length > 0}
+              aria-activedescendant={keyboard.activeIndex >= 0 ? `speciesSuggestions-${keyboard.activeIndex}` : undefined}
+              onKeyDown={keyboard.onKeyDown}
             />
 
             {showSuggestions && filteredNames.length > 0 && (
-              <ul className={styles.suggestList} role="listbox">
-                {filteredNames.map((name) => (
+              <ul id="speciesSuggestions" className={styles.suggestList} role="listbox">
+                {filteredNames.map((name, i) => (
                   <li
                     key={name}
-                    className={styles.suggestItem}
+                    id={`speciesSuggestions-${i}`}
+                    className={`${styles.suggestItem} ${i === keyboard.activeIndex ? styles.suggestItemActive : ''}`}
                     role="option"
+                    aria-selected={i === keyboard.activeIndex}
+                    onMouseEnter={() => keyboard.setActiveIndex(i)}
                     onClick={() => selectName(name)}
                     onMouseDown={(e) => e.preventDefault()}
                   >

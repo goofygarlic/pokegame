@@ -14,6 +14,7 @@ import {
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import styles from './play-guess-the-mon.module.css'
+import { useSuggestionKeyboard } from '@/lib/use-suggestion-keyboard'
 import SiteHeader from './site-header'
 
 interface PlayGuessTheMonProps {
@@ -156,6 +157,19 @@ export default function PlayGuessTheMon({
     }
   }
 
+    const keyboard = useSuggestionKeyboard({
+    listId: 'mysterySuggestions',
+    suggestions: filteredNames,
+    open: showSuggestions,
+    onOpen: () => setShowSuggestions(true),
+    onClose: () => setShowSuggestions(false),
+    onPick: (name) => {
+      setQuery(name)
+      setShowSuggestions(false)
+    },
+    onSubmit: submitGuess,
+  })
+
   async function handleShare() {
     if (!answer) return
     const url = typeof window !== 'undefined' ? window.location.href : ''
@@ -258,20 +272,24 @@ export default function PlayGuessTheMon({
                   disabled={submitting}
                   placeholder="Which Pokémon is it?"
                   autoComplete="off"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') submitGuess()
-                    if (e.key === 'Escape') setShowSuggestions(false)
-                  }}
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-controls="mysterySuggestions"
+                  aria-expanded={showSuggestions && filteredNames.length > 0}
+                  aria-activedescendant={keyboard.activeIndex >= 0 ? `mysterySuggestions-${keyboard.activeIndex}` : undefined}
+                  onKeyDown={keyboard.onKeyDown}
                 />
 
                 {showSuggestions && filteredNames.length > 0 && (
-                  <ul className={styles.suggestList} role="listbox">
-                    {filteredNames.map((name) => (
+                  <ul id="mysterySuggestions" className={styles.suggestList} role="listbox">
+                    {filteredNames.map((name, i) => (
                       <li
                         key={name}
-                        className={styles.suggestItem}
+                        id={`mysterySuggestions-${i}`}
+                        className={`${styles.suggestItem} ${i === keyboard.activeIndex ? styles.suggestItemActive : ''}`}
                         role="option"
-                        aria-selected={false}
+                        aria-selected={i === keyboard.activeIndex}
+                        onMouseEnter={() => keyboard.setActiveIndex(i)}
                         onClick={() => {
                           setQuery(name)
                           setShowSuggestions(false)
