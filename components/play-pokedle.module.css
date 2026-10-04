@@ -416,6 +416,28 @@
   font-weight: 700;
 }
 
+.shareButton {
+  margin-top: 6px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--surface);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 100px;
+  padding: 9px 22px;
+  cursor: pointer;
+}
+
+.shareButton:hover {
+  filter: brightness(1.06);
+}
+
+.shareButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .footerNote {
   font-family: var(--font-mono), 'JetBrains Mono', monospace;
   font-size: 0.78rem;

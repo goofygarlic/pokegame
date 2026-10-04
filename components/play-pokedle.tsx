@@ -75,6 +75,41 @@ function statusClass(status: TypeComparison | ExactOrDirection | 'correct' | 'ab
   return 'cellBad'
 }
 
+const STATUS_EMOJI: Record<StatusClass, string> = {
+  cellGood: '🟩',
+  cellWarn: '🟨',
+  cellBad: '🟥',
+}
+
+function buildShareText(
+  guesses: Guess[],
+  succeeded: boolean | null,
+  formattedDate: string | null,
+  puzzleUrl: string
+): string {
+  const header = formattedDate ? `Pokédle ${formattedDate}` : 'Pokédle'
+  const result = succeeded
+    ? `Solved in ${guesses.length} guess${guesses.length === 1 ? '' : 'es'}`
+    : `${guesses.length} guess${guesses.length === 1 ? '' : 'es'}`
+
+  const grid = guesses
+    .map((g) =>
+      [
+        g.comparison.type1,
+        g.comparison.type2,
+        g.comparison.generation,
+        g.comparison.height,
+        g.comparison.weight,
+        g.comparison.color,
+      ]
+        .map((status) => STATUS_EMOJI[statusClass(status)])
+        .join('')
+    )
+    .join('\n')
+
+  return `${header}\n${result}\n\n${grid}\n\n${puzzleUrl}`
+}
+
 function directionArrow(value: ExactOrDirection): string {
   if (value === 'higher') return ' ↑'
   if (value === 'lower') return ' ↓'
@@ -114,6 +149,7 @@ export default function PlayPokedle({
   const [succeeded, setSucceeded] = useState<boolean | null>(initialSucceeded)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const filteredNames = useMemo(() => {
     if (query.trim().length === 0) return []
@@ -172,6 +208,19 @@ export default function PlayPokedle({
 
   const answerGuess = succeeded ? guesses[guesses.length - 1] : null
   const formattedDate = formatDailyDate(dailyDate)
+
+  async function handleShare() {
+  const puzzleUrl = typeof window !== 'undefined' ? window.location.href : ''
+  const text = buildShareText(guesses, succeeded, formattedDate, puzzleUrl)
+
+  try {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  } catch {
+    setError('Could not copy to clipboard')
+  }
+}
 
   return (
     <div className={`${styles.board} ${fraunces.variable} ${workSans.variable} ${jetbrainsMono.variable}`}>
@@ -306,6 +355,9 @@ export default function PlayPokedle({
               <span className={styles.resultTries}>
                 Solved in {guesses.length} guess{guesses.length === 1 ? '' : 'es'}
               </span>
+              <button className={styles.shareButton} onClick={handleShare} type="button">
+                {copied ? 'Copied!' : 'Share'}
+              </button>
             </span>
           </div>
         ) : (
