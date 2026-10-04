@@ -1,19 +1,4 @@
 .board {
-  --bg: #f5f1e6;
-  --surface: #ffffff;
-  --ink: #232419;
-  --ink-dim: #706c58;
-  --accent: #1f6f6b;
-  --line: #ded8c2;
-
-  --good: #2f7f52;
-  --good-bg: #e2f1e6;
-  --warn: #93691a;
-  --warn-bg: #f8ecd2;
-  --bad: #a83b30;
-  --bad-bg: #f7e2df;
-
-  font-family: var(--font-body), 'Work Sans', 'Segoe UI', system-ui, sans-serif;
   color: var(--ink);
   max-width: 860px;
   margin-inline: auto;
@@ -22,39 +7,19 @@
   gap: 18px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .board {
-    --bg: #14171a;
-    --surface: #1c2023;
-    --ink: #edefe8;
-    --ink-dim: #9aa196;
-    --accent: #5fd0c8;
-    --line: #2b3034;
-
-    --good: #7fe0ab;
-    --good-bg: rgba(63, 180, 122, 0.18);
-    --warn: #efc26a;
-    --warn-bg: rgba(191, 140, 40, 0.2);
-    --bad: #f3897d;
-    --bad-bg: rgba(205, 80, 66, 0.22);
-  }
-}
-
-.masthead {
+.gameIntro {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
+  flex-direction: column;
+  gap: 4px;
 }
 
-.brandName {
+.gameTitle {
+  margin: 0;
   font-family: var(--font-display), 'Fraunces', Georgia, serif;
+  font-style: italic;
   font-weight: 600;
-  font-size: 1.55rem;
-  letter-spacing: 0.01em;
+  font-size: 1.9rem;
+  line-height: 1.15;
   color: var(--ink);
 }
 
@@ -78,7 +43,7 @@
 }
 
 .tagline {
-  margin: -8px 0 0;
+  margin: 0;
   color: var(--ink-dim);
   font-size: 0.95rem;
   line-height: 1.5;
@@ -434,6 +399,50 @@
 }
 
 .shareButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.nextSteps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.nextHint {
+  margin: 0;
+  max-width: 42ch;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+
+.nextHint strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.nextButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 100px;
+  padding: 9px 20px;
+  text-decoration: none;
+}
+
+.nextButton:hover {
+  background: var(--surface);
+}
+
+.nextButton:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }

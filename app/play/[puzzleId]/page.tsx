@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getAllPokemonNames } from '@/lib/pokeapi'
 import AutoSignIn from '@/components/auto-sign-in'
 import PlayPokedle from '@/components/play-pokedle'
+import PlayGuessTheMon from '@/components/play-guess-the-mon'
 
 export default async function PlayPuzzle({
   params,
@@ -29,8 +30,16 @@ export default async function PlayPuzzle({
     return <p>Puzzle not found.</p>
   }
 
+  if (puzzle.type === 'guess-the-mon') {
+    return (
+      <main style={{ padding: '2rem' }}>
+        <PlayGuessTheMon />
+      </main>
+    )
+  }
+
   if (puzzle.type !== 'pokedle') {
-    return <p>This puzzle type isn't supported yet.</p>
+    return <p>This puzzle type isn&apos;t supported yet.</p>
   }
 
   const [{ data: existingAttempt }, pokemonNames] = await Promise.all([

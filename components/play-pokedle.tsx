@@ -1,25 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Fraunces, Work_Sans, JetBrains_Mono } from 'next/font/google'
+import Link from 'next/link'
+import SiteHeader from './site-header'
 import styles from './play-pokedle.module.css'
-
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  style: ['italic', 'normal'],
-  weight: ['500', '600'],
-  variable: '--font-display',
-})
-const workSans = Work_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-body',
-})
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
-  variable: '--font-mono',
-})
 
 type TypeComparison = 'correct' | 'present' | 'absent'
 type ExactOrDirection = 'correct' | 'higher' | 'lower'
@@ -64,7 +48,7 @@ interface PlayPokedleProps {
 function formatDailyDate(dailyDate: string | null): string | null {
   if (!dailyDate) return null
 
-  const date = new Date(`${dailyDate}T:00:00:00`)
+  const date = new Date(`${dailyDate}T00:00:00`)
   if (Number.isNaN(date.getTime())) return null
   return date.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})
 }
@@ -210,22 +194,21 @@ export default function PlayPokedle({
   const formattedDate = formatDailyDate(dailyDate)
 
   async function handleShare() {
-  const puzzleUrl = typeof window !== 'undefined' ? window.location.href : ''
-  const text = buildShareText(guesses, succeeded, formattedDate, puzzleUrl)
+    const puzzleUrl = typeof window !== 'undefined' ? window.location.href : ''
+    const text = buildShareText(guesses, succeeded, formattedDate, puzzleUrl)
 
-  try {
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  } catch {
-    setError('Could not copy to clipboard')
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setError('Could not copy to clipboard')
+    }
   }
-}
 
   return (
-    <div className={`${styles.board} ${fraunces.variable} ${workSans.variable} ${jetbrainsMono.variable}`}>
-      <header className={styles.masthead}>
-        <span className={styles.brandName}>Pokédle</span>
+    <div className={styles.board}>
+      <SiteHeader>
         <div className={styles.meta}>
           {formattedDate && <span>{formattedDate}</span>}
           {formattedDate && <span className={styles.metaDivider}>·</span>}
@@ -233,9 +216,12 @@ export default function PlayPokedle({
             <strong>{guesses.length}</strong> guess{guesses.length === 1 ? '' : 'es'}
           </span>
         </div>
-      </header>
+      </SiteHeader>
 
-      {description && <p className={styles.tagline}>{description}</p>}
+      <div className={styles.gameIntro}>
+        <h1 className={styles.gameTitle}>Pokédle</h1>
+        {description && <p className={styles.tagline}>{description}</p>}
+      </div>
 
       {!completed && (
         <div className={styles.scanBar}>
@@ -343,23 +329,35 @@ export default function PlayPokedle({
 
       {completed && (
         succeeded && answerGuess ? (
-          <div className={styles.resultCard}>
-            <span className={styles.resultArt}>
-              {answerGuess.sprite_url && (
-                <img src={answerGuess.sprite_url} alt={answerGuess.guess} width={96} height={96} />
-              )}
-            </span>
-            <span className={styles.resultInfo}>
-              <span className={styles.resultDex}>{formatDex(answerGuess.attributes.dexNumber)}</span>
-              <span className={styles.resultName}>{answerGuess.guess}</span>
-              <span className={styles.resultTries}>
-                Solved in {guesses.length} guess{guesses.length === 1 ? '' : 'es'}
+          <>
+            <div className={styles.resultCard}>
+              <span className={styles.resultArt}>
+                {answerGuess.sprite_url && (
+                  <img src={answerGuess.sprite_url} alt={answerGuess.guess} width={96} height={96} />
+                )}
               </span>
-              <button className={styles.shareButton} onClick={handleShare} type="button">
-                {copied ? 'Copied!' : 'Share'}
-              </button>
-            </span>
-          </div>
+              <span className={styles.resultInfo}>
+                <span className={styles.resultDex}>{formatDex(answerGuess.attributes.dexNumber)}</span>
+                <span className={styles.resultName}>{answerGuess.guess}</span>
+                <span className={styles.resultTries}>
+                  Solved in {guesses.length} guess{guesses.length === 1 ? '' : 'es'}
+                </span>
+                <button className={styles.shareButton} onClick={handleShare} type="button">
+                  {copied ? 'Copied!' : 'Share'}
+                </button>
+              </span>
+            </div>
+
+            <div className={styles.nextSteps}>
+              <p className={styles.nextHint}>
+                A new Pokémon drops at midnight ET. Tap <strong>PokeGame</strong> in the top left to head back home,
+                or try another game.
+              </p>
+              <Link href="/daily/guess-the-mon" className={styles.nextButton}>
+                Play Guess the Pokémon →
+              </Link>
+            </div>
+          </>
         ) : (
           <p className={styles.footerNote}>Puzzle complete.</p>
         )

@@ -1,0 +1,67 @@
+/* Guess the Pokémon. Color tokens and fonts come from app/globals.css + app/layout.tsx. */
+.board {
+  color: var(--ink);
+  max-width: 860px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 28px 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.eyebrow {
+  font-family: var(--font-mono), 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display), 'Fraunces', Georgia, serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.text {
+  margin: 0;
+  font-size: 0.93rem;
+  line-height: 1.55;
+  color: var(--ink-dim);
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px 20px;
+  text-decoration: none;
+}
+
+.backButton:hover {
+  border-color: var(--accent);
+}
+
+.backButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

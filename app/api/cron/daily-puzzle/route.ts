@@ -23,6 +23,7 @@ export async function GET(request: Request) {
     .from('puzzles')
     .select('id')
     .eq('daily_date', today)
+    .eq('type', 'pokedle')
     .maybeSingle()
  
   if (existing) {
