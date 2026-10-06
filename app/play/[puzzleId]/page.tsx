@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import { getAllPokemonNames } from '@/lib/pokeapi'
+import { getGuessOptions, getHintData } from '@/lib/pokeapi'
+import type { AnswerReveal } from '@/lib/pokemon-forms'
 import AutoSignIn from '@/components/auto-sign-in'
 import PlayPokedle from '@/components/play-pokedle'
 import PlayGuessTheMon from '@/components/play-guess-the-mon'
@@ -29,7 +30,7 @@ export default async function PlayPuzzle({
 
   const { data: puzzle, error: puzzleError } = await supabase
     .from('puzzles')
-    .select('id, title, description, type, daily_date')
+    .select('id, title, description, type, daily_date, content')
     .eq('id', puzzleId)
     .single()
 
@@ -48,8 +49,8 @@ export default async function PlayPuzzle({
     const solved = attempt.completed && attempt.succeeded === true
     const needsData = solved || attempt.revealedHints.length > 0
 
-    const [pokemonNames, data] = await Promise.all([
-      getAllPokemonNames(supabase),
+    const [guessOptions, data] = await Promise.all([
+      getGuessOptions(supabase),
       // Only look up the answer when there's something to show, and never send it unless solved.
       needsData ? getGuessTheMonData(loaded.answerSlug, supabase).catch(() => null) : Promise.resolve(null),
     ])
@@ -68,10 +69,12 @@ export default async function PlayPuzzle({
           puzzleId={puzzle.id}
           dailyDate={puzzle.daily_date}
           description={puzzle.description}
-          pokemonNames={pokemonNames}
+          guessOptions={guessOptions}
           initialRevealedHints={attempt.revealedHints}
           initialHints={data ? (solved ? buildAllHintValues(data) : buildHintValues(attempt.revealedHints, data)) : {}}
-          initialWrongGuesses={attempt.guesses.filter((g) => !g.correct).map((g) => g.guess)}
+          initialWrongGuesses={attempt.guesses
+            .filter((g) => !g.correct)
+            .map((g) => guessOptions.find((o) => o.value === g.guess)?.label ?? g.guess)}
           initialAnswer={solved && data ? toAnswerReveal(data) : null}
         />
       </main>
@@ -82,15 +85,25 @@ export default async function PlayPuzzle({
     return <p>This puzzle type isn&apos;t supported yet.</p>
   }
 
-  const [{ data: existingAttempt }, pokemonNames] = await Promise.all([
+  const [{ data: existingAttempt }, guessOptions] = await Promise.all([
     supabase
       .from('attempts')
       .select('guesses, completed, succeeded')
       .eq('puzzle_id', puzzleId)
       .eq('user_id', user.id)
       .maybeSingle(),
-    getAllPokemonNames(supabase),
+    getGuessOptions(supabase),
   ])
+
+  // Once solved, show the exact answer form on the result card (the winning guess
+  // might have been a different form of the same species).
+  let initialAnswer: AnswerReveal | null = null
+  if (existingAttempt?.succeeded && puzzle.content?.answer_species) {
+    const answerData = await getHintData(puzzle.content.answer_species, supabase).catch(() => null)
+    if (answerData) {
+      initialAnswer = { name: answerData.label, dexNumber: answerData.dexNumber, spriteUrl: answerData.spriteUrl }
+    }
+  }
 
   return (
     <main style={{ padding: '2rem' }}>
@@ -98,10 +111,11 @@ export default async function PlayPuzzle({
         puzzleId={puzzle.id}
         dailyDate={puzzle.daily_date}
         description={puzzle.description}
-        pokemonNames={pokemonNames}
+        guessOptions={guessOptions}
         initialGuesses={existingAttempt?.guesses ?? []}
         initialCompleted={existingAttempt?.completed ?? false}
         initialSucceeded={existingAttempt?.succeeded ?? null}
+        initialAnswer={initialAnswer}
       />
     </main>
   )

@@ -2,14 +2,15 @@
 // (route handlers and server components) so the answer never reaches the browser.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { getTypeMatchups, type PokemonType, type TypeMatchups } from './pokeapi'
+import { getTypeMatchups, pickSprite, type PokemonType, type RawSprites, type TypeMatchups } from './pokeapi'
+import { formLabel, type AnswerReveal } from './pokemon-forms'
 import { HINTS, isHintKey, type HintKey, type HintValue } from './guess-the-mon-config'
 
 const POKEAPI_ORIGIN = 'https://pokeapi.co'
 const POKEAPI_BASE = `${POKEAPI_ORIGIN}/api/v2`
 
 // Bump the version if the GuessTheMonData shape changes, so old cache rows are ignored.
-const CACHE_PREFIX = 'gtm-v1:'
+const CACHE_PREFIX = 'gtm-v2:'
 
 const ALL_TYPES: PokemonType[] = [
   'normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 'ground',
@@ -17,8 +18,11 @@ const ALL_TYPES: PokemonType[] = [
 ]
 
 export interface GuessTheMonData {
-  speciesName: string // what the player has to guess, e.g. "eevee"
-  dexNumber: number
+  speciesName: string // the answer's species, e.g. "darmanitan"
+  formName: string // the exact Pokémon/form, e.g. "darmanitan-galar-standard"
+  label: string // what players see, e.g. "galarian darmanitan"
+  isDefaultForm: boolean
+  dexNumber: number // National Dex number of the species
   spriteUrl: string | null
   cryUrl: string | null
   heightM: number
@@ -31,15 +35,12 @@ export interface GuessTheMonData {
   evolution: { stage: number; totalStages: number; from: string | null; to: string[] }
 }
 
-export interface AnswerReveal {
-  name: string
-  dexNumber: number
-  spriteUrl: string | null
-}
+// Shared with Pokédle, so it lives in lib/pokemon-forms.ts now.
+export type { AnswerReveal } from './pokemon-forms'
 
 // One entry in attempts.guesses for this game.
 export interface GuessEntry {
-  guess: string
+  guess: string // the dropdown option's value: "darmanitan" or "darmanitan-galar-standard"
   correct: boolean
   guessed_at: string
 }
@@ -53,10 +54,11 @@ interface NamedRef {
 
 interface RawPokemon {
   name: string
+  is_default: boolean
   height: number // decimetres
   weight: number // hectograms
   types: { slot: number; type: NamedRef }[]
-  sprites?: { front_default?: string | null }
+  sprites?: RawSprites
   cries?: { latest?: string | null; legacy?: string | null }
   species: NamedRef
 }
@@ -250,6 +252,8 @@ function computeWeaknesses(matchups: TypeMatchups[]): GuessTheMonData['weaknesse
 // ---- Building + fetching ----------------------------------------------------
 
 // Pure function (no network), so it can be tested against saved PokeAPI JSON.
+// Height, weight, types (weaknesses), sprite and cry come from the exact form; egg groups,
+// catch rate, gender, growth rate and evolution are shared by the whole species.
 export function buildGuessTheMonData(
   pokemon: RawPokemon,
   species: RawSpecies,
@@ -258,8 +262,11 @@ export function buildGuessTheMonData(
 ): GuessTheMonData {
   return {
     speciesName: species.name,
+    formName: pokemon.name,
+    label: formLabel(pokemon.name, species.name, pokemon.is_default),
+    isDefaultForm: pokemon.is_default,
     dexNumber: species.id,
-    spriteUrl: pokemon.sprites?.front_default ?? null,
+    spriteUrl: pickSprite(pokemon.sprites),
     cryUrl: pokemon.cries?.latest ?? pokemon.cries?.legacy ?? null,
     heightM: pokemon.height / 10,
     weightKg: pokemon.weight / 10,
@@ -282,9 +289,24 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json()
 }
 
+// Answers are Pokémon/form names ("darmanitan-galar-standard"). A bare species name whose
+// default form has a longer name ("mimikyu") falls back to that species' default form.
+async function fetchPokemon(slug: string): Promise<RawPokemon> {
+  try {
+    return await fetchJson<RawPokemon>(`${POKEAPI_BASE}/pokemon/${slug}`)
+  } catch (err) {
+    const species = await fetchJson<{ varieties: { is_default: boolean; pokemon: NamedRef }[] }>(
+      `${POKEAPI_BASE}/pokemon-species/${slug}`
+    )
+    const defaultForm = species.varieties.find((v) => v.is_default) ?? species.varieties[0]
+    if (!defaultForm) throw err
+    return fetchJson<RawPokemon>(absoluteUrl(defaultForm.pokemon.url))
+  }
+}
+
 async function fetchGuessTheMonData(slug: string): Promise<GuessTheMonData> {
-  // Start from /pokemon so form names like "deoxys-normal" work, then follow its species link.
-  const pokemon = await fetchJson<RawPokemon>(`${POKEAPI_BASE}/pokemon/${slug}`)
+  // Start from /pokemon so the exact form's data is used, then follow its species link.
+  const pokemon = await fetchPokemon(slug)
   const species = await fetchJson<RawSpecies>(absoluteUrl(pokemon.species.url))
 
   const [chain, matchups] = await Promise.all([
@@ -312,7 +334,9 @@ export async function getGuessTheMonData(slug: string, supabase: SupabaseClient)
   }
 
   if (cached) {
-    return cached.data as GuessTheMonData
+    const data = cached.data as GuessTheMonData
+    // Recompute the label so renaming forms in lib/pokemon-forms.ts applies to cached rows too.
+    return { ...data, label: formLabel(data.formName, data.speciesName, data.isDefaultForm) }
   }
 
   const data = await fetchGuessTheMonData(slug)
@@ -398,7 +422,7 @@ export function buildAllHintValues(data: GuessTheMonData): Partial<Record<HintKe
 }
 
 export function toAnswerReveal(data: GuessTheMonData): AnswerReveal {
-  return { name: data.speciesName, dexNumber: data.dexNumber, spriteUrl: data.spriteUrl }
+  return { name: data.label, dexNumber: data.dexNumber, spriteUrl: data.spriteUrl }
 }
 
 // ---- Loading and saving a player's attempt ------------------------------------

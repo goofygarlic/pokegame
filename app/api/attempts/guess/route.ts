@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
-import { getHintData, type HintData } from '@/lib/pokeapi'
+import { getGuessOptions, getHintData, type HintData } from '@/lib/pokeapi'
+import { MATCH_ANY_FORM, type AnswerReveal } from '@/lib/pokemon-forms'
  
 type ExactOrDirection = 'correct' | 'higher' | 'lower'
 type TypeComparison = 'correct' | 'present' | 'absent'
@@ -65,7 +66,7 @@ interface GuessAttributes {
  
 function extractAttributes(pokemon: HintData): GuessAttributes {
   return {
-    dexNumber: pokemon.id,
+    dexNumber: pokemon.dexNumber, // species number, not the 10001+ form id
     type1: pokemon.types[0],
     type2: pokemon.types[1] ?? null,
     generation: pokemon.generation,
@@ -111,6 +112,13 @@ export async function POST(request: Request) {
  
   const answerSlug: string = puzzle.content.answer_species
   const guessSlug = toSlug(guess)
+
+  // Only species and allowed forms from the dropdown count.
+  const options = await getGuessOptions(supabase)
+  const option = options.find((o) => o.value === guessSlug)
+  if (!option) {
+    return NextResponse.json({ error: `"${guess}" isn't a recognized Pokemon name` }, { status: 400 })
+  }
  
   const { data: existingAttempt } = await supabase
     .from('attempts')
@@ -141,7 +149,18 @@ export async function POST(request: Request) {
     )
   }
  
-  const succeeded = guessData.name === answerData.name
+  // MATCH_ANY_FORM (lib/pokemon-forms.ts): any form of the answer's species counts, so
+  // "darmanitan" solves a Galarian Darmanitan puzzle. Otherwise the exact form is needed.
+  const succeeded = MATCH_ANY_FORM
+    ? guessData.speciesName === answerData.speciesName
+    : guessData.label === answerData.label
+  // "darmanitan (galarian standard)", or just "mimikyu" rather than "mimikyu-disguised".
+  const guessDisplayName = option.label
+  const answer: AnswerReveal = {
+    name: answerData.label,
+    dexNumber: answerData.dexNumber,
+    spriteUrl: answerData.spriteUrl,
+  }
   const comparison = buildComparison(guessData, answerData)
   const attributes = extractAttributes(guessData)
  
@@ -149,7 +168,7 @@ export async function POST(request: Request) {
   const newGuesses = [
     ...priorGuesses,
     {
-      guess: guessData.name,
+      guess: guessDisplayName,
       sprite_url: guessData.spriteUrl,
       attributes,
       comparison,
@@ -175,13 +194,13 @@ export async function POST(request: Request) {
   }
  
   return NextResponse.json({
-    guessName: guessData.name,
+    guessName: guessDisplayName,
     spriteUrl: guessData.spriteUrl,
     attributes,
     comparison,
     completed: succeeded,
     succeeded,
     guessesUsed: newGuesses.length,
-    answer: succeeded ? answerData.name : undefined,
+    answer: succeeded ? answer : undefined, // the exact form, for the result card
   })
 }

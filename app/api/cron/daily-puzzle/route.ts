@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getPokemon } from '@/lib/pokeapi'
+import { getSpeciesVarieties } from '@/lib/pokeapi'
+import { isAllowedForm } from '@/lib/pokemon-forms'
  
 const MAX_DEX_NUMBER = 1025 // update as new generations are added to PokeAPI
  
@@ -32,6 +33,18 @@ function todayDateString(): string {
 function randomDexNumber(): number {
   return Math.floor(Math.random() * MAX_DEX_NUMBER) + 1 // literally random pokemon
 }
+
+// Dex numbers only cover species, and alternate forms have unrelated ids (10001+).
+// So: pick a random species, list all of its forms (PokeAPI calls them "varieties"),
+// keep the ones FORM_RULES in lib/pokemon-forms.ts allows, then pick one at random.
+// Every allowed form of that species has the same chance, e.g. Darmanitan is
+// 1/4 each: Standard, Zen, Galarian Standard, Galarian Zen.
+async function pickRandomAnswer(): Promise<string> {
+  const { speciesName, varieties } = await getSpeciesVarieties(randomDexNumber())
+  const allowed = varieties.filter((v) => isAllowedForm(v.name, speciesName, v.isDefault))
+  const pool = allowed.length > 0 ? allowed : varieties
+  return pool[Math.floor(Math.random() * pool.length)].name
+}
  
 export async function GET(request: Request) {
   // verify request came from Vercel Cron, not public caller.
@@ -60,7 +73,7 @@ export async function GET(request: Request) {
  
     try {
       // each game rolls its own random number, so the two answers are independent (usually different Pokemon, occasionally the same one by chance).
-      const pokemon = await getPokemon(randomDexNumber())
+      const answer = await pickRandomAnswer()
  
       const { data: newPuzzle, error: insertError } = await supabase
         .from('puzzles')
@@ -71,7 +84,7 @@ export async function GET(request: Request) {
           description: game.description,
           published: true,
           daily_date: today,
-          content: { answer_species: pokemon.name },
+          content: { answer_species: answer }, // a Pokémon/form name, e.g. "darmanitan-galar-standard"
         })
         .select('id')
         .single()

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import SiteHeader from './site-header'
 import styles from './play-pokedle.module.css'
 import { useSuggestionKeyboard } from '@/lib/use-suggestion-keyboard'
+import { filterGuessOptions, findGuessOption, type AnswerReveal, type GuessOption } from '@/lib/pokemon-forms'
 
 type TypeComparison = 'correct' | 'present' | 'absent'
 type ExactOrDirection = 'correct' | 'higher' | 'lower'
@@ -40,10 +41,11 @@ interface PlayPokedleProps {
   puzzleId: string
   dailyDate: string | null
   description: string | null
-  pokemonNames: string[]
+  guessOptions: GuessOption[] // species + allowed forms, from lib/pokemon-forms.ts
   initialGuesses: Guess[]
   initialCompleted: boolean
   initialSucceeded: boolean | null
+  initialAnswer: AnswerReveal | null // only set once the puzzle is solved
 }
 
 function formatDailyDate(dailyDate: string | null): string | null {
@@ -122,10 +124,11 @@ export default function PlayPokedle({
   puzzleId,
   dailyDate,
   description,
-  pokemonNames,
+  guessOptions,
   initialGuesses,
   initialCompleted,
   initialSucceeded,
+  initialAnswer,
 }: PlayPokedleProps) {
   const [guesses, setGuesses] = useState<Guess[]>(initialGuesses)
   const [query, setQuery] = useState('')
@@ -135,12 +138,13 @@ export default function PlayPokedle({
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [answer, setAnswer] = useState<AnswerReveal | null>(initialAnswer)
 
-  const filteredNames = useMemo(() => {
-    if (query.trim().length === 0) return []
-    const q = query.toLowerCase()
-    return pokemonNames.filter((name) => name.includes(q)).slice(0, 8)
-  }, [query, pokemonNames])
+  // Labels like "galarian darmanitan"; every typed word has to match.
+  const filteredNames = useMemo(
+    () => filterGuessOptions(guessOptions, query).map((o) => o.label),
+    [query, guessOptions]
+  )
 
   function selectName(name: string) {
     setQuery(name)
@@ -150,10 +154,10 @@ export default function PlayPokedle({
   async function submitGuess() {
     setError(null)
 
-    const trimmed = query.trim().toLowerCase()
-    if (trimmed.length === 0) return
+    if (query.trim().length === 0) return
 
-    if (!pokemonNames.includes(trimmed)) {
+    const option = findGuessOption(guessOptions, query)
+    if (!option) {
       setError('Select a Pokemon from the dropdown list')
       return
     }
@@ -164,7 +168,7 @@ export default function PlayPokedle({
       const res = await fetch('/api/attempts/guess', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ puzzleId, guess: trimmed }),
+        body: JSON.stringify({ puzzleId, guess: option.value }),
       })
 
       const data = await res.json()
@@ -173,6 +177,8 @@ export default function PlayPokedle({
         setError(data.error ?? 'Something went wrong')
         return
       }
+
+      if (data.answer) setAnswer(data.answer)
 
       setGuesses((prev) => [
         ...prev,
@@ -191,7 +197,7 @@ export default function PlayPokedle({
     }
   }
 
-    const keyboard = useSuggestionKeyboard({
+  const keyboard = useSuggestionKeyboard({
     listId: 'speciesSuggestions',
     suggestions: filteredNames,
     open: showSuggestions,
@@ -201,7 +207,15 @@ export default function PlayPokedle({
     onSubmit: submitGuess,
   })
 
-  const answerGuess = succeeded ? guesses[guesses.length - 1] : null
+  // The exact answer form from the server, or the winning guess for puzzles solved
+  // before forms were added.
+  const lastGuess = guesses[guesses.length - 1]
+  const result: AnswerReveal | null = !succeeded
+    ? null
+    : (answer ??
+      (lastGuess
+        ? { name: lastGuess.guess, dexNumber: lastGuess.attributes.dexNumber ?? 0, spriteUrl: lastGuess.sprite_url }
+        : null))
   const formattedDate = formatDailyDate(dailyDate)
 
   async function handleShare() {
@@ -344,17 +358,15 @@ export default function PlayPokedle({
       </div>
 
       {completed && (
-        succeeded && answerGuess ? (
+        succeeded && result ? (
           <>
             <div className={styles.resultCard}>
               <span className={styles.resultArt}>
-                {answerGuess.sprite_url && (
-                  <img src={answerGuess.sprite_url} alt={answerGuess.guess} width={96} height={96} />
-                )}
+                {result.spriteUrl && <img src={result.spriteUrl} alt={result.name} width={96} height={96} />}
               </span>
               <span className={styles.resultInfo}>
-                <span className={styles.resultDex}>{formatDex(answerGuess.attributes.dexNumber)}</span>
-                <span className={styles.resultName}>{answerGuess.guess}</span>
+                <span className={styles.resultDex}>{formatDex(result.dexNumber || undefined)}</span>
+                <span className={styles.resultName}>{result.name}</span>
                 <span className={styles.resultTries}>
                   Solved in {guesses.length} guess{guesses.length === 1 ? '' : 'es'}
                 </span>

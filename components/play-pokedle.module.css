@@ -309,9 +309,9 @@
   font-size: 1rem;
   color: var(--ink);
   text-transform: capitalize;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
+  /* form names like "Tauros (Paldean Combat Breed)" wrap instead of being cut off */
+  overflow-wrap: break-word;
 }
 
 .resultCard {

@@ -1,6 +1,6 @@
 'use client'
 
-import type { AnswerReveal } from '@/lib/guess-the-mon'
+import { filterGuessOptions, findGuessOption, type AnswerReveal, type GuessOption } from '@/lib/pokemon-forms'
 import {
   BALL_TIERS,
   HINTS,
@@ -21,10 +21,10 @@ interface PlayGuessTheMonProps {
   puzzleId: string
   dailyDate: string | null
   description: string | null
-  pokemonNames: string[]
+  guessOptions: GuessOption[] // species + allowed forms, from lib/pokemon-forms.ts
   initialRevealedHints: HintKey[]
   initialHints: Partial<Record<HintKey, HintValue>>
-  initialWrongGuesses: string[]
+  initialWrongGuesses: string[] // labels, e.g. "darmanitan zen mode"
   initialAnswer: AnswerReveal | null // only set once the puzzle is solved
 }
 
@@ -65,7 +65,7 @@ export default function PlayGuessTheMon({
   puzzleId,
   dailyDate,
   description,
-  pokemonNames,
+  guessOptions,
   initialRevealedHints,
   initialHints,
   initialWrongGuesses,
@@ -88,11 +88,11 @@ export default function PlayGuessTheMon({
   const tier = getBallTier(points)
   const formattedDate = formatDailyDate(dailyDate)
 
-  const filteredNames = useMemo(() => {
-    if (query.trim().length === 0) return []
-    const q = query.toLowerCase()
-    return pokemonNames.filter((name) => name.includes(q)).slice(0, 8)
-  }, [query, pokemonNames])
+  // Labels like "galarian darmanitan"; every typed word has to match.
+  const filteredNames = useMemo(
+    () => filterGuessOptions(guessOptions, query).map((o) => o.label),
+    [query, guessOptions]
+  )
 
   async function revealHint(key: HintKey) {
     setError(null)
@@ -121,10 +121,10 @@ export default function PlayGuessTheMon({
   async function submitGuess() {
     setError(null)
 
-    const trimmed = query.trim().toLowerCase()
-    if (trimmed.length === 0) return
+    if (query.trim().length === 0) return
 
-    if (!pokemonNames.includes(trimmed)) {
+    const option = findGuessOption(guessOptions, query)
+    if (!option) {
       setError('Select a Pokémon from the dropdown list')
       return
     }
@@ -135,7 +135,7 @@ export default function PlayGuessTheMon({
       const res = await fetch('/api/guess-the-mon/guess', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ puzzleId, guess: trimmed }),
+        body: JSON.stringify({ puzzleId, guess: option.value }),
       })
       const data = await res.json()
 
@@ -148,7 +148,7 @@ export default function PlayGuessTheMon({
         setAnswer(data.answer)
         setHintValues(data.hints)
       } else {
-        setWrongGuesses((prev) => [...prev, data.guess])
+        setWrongGuesses((prev) => [...prev, data.guessLabel ?? data.guess])
       }
       setQuery('')
       setShowSuggestions(false)
@@ -157,7 +157,7 @@ export default function PlayGuessTheMon({
     }
   }
 
-    const keyboard = useSuggestionKeyboard({
+  const keyboard = useSuggestionKeyboard({
     listId: 'mysterySuggestions',
     suggestions: filteredNames,
     open: showSuggestions,
