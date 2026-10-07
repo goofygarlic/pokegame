@@ -19,11 +19,17 @@ export default function BuilderLogin() {
       const res = await fetch('/api/battle/builder/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret }),
+        body: JSON.stringify({ secret: secret.trim() }),
       })
-      const data = await res.json()
-      if (!res.ok) return setError(data.error ?? 'Something went wrong')
+      // A missing route or server crash returns an HTML page, not JSON, so read it carefully.
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        setError(data?.error ?? `The server answered with an error (${res.status}).`)
+        return
+      }
       router.refresh()
+    } catch {
+      setError("Couldn't reach the server. Check your connection and try again.")
     } finally {
       setBusy(false)
     }
