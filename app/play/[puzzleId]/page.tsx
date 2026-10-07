@@ -4,6 +4,9 @@ import type { AnswerReveal } from '@/lib/pokemon-forms'
 import AutoSignIn from '@/components/auto-sign-in'
 import PlayPokedle from '@/components/play-pokedle'
 import PlayGuessTheMon from '@/components/play-guess-the-mon'
+import PlayBattle from '@/components/play-battle'
+import { runBattle } from '@/lib/battle/engine'
+import { buildReveal, loadBattleAttempt, loadBattlePuzzle, puzzleInfo, setupOf } from '@/lib/battle/puzzles'
 import {
   buildAllHintValues,
   buildHintValues,
@@ -39,6 +42,28 @@ export default async function PlayPuzzle({
   }
 
   // Each game type has its own component; this page picks the right one.
+
+    if (puzzle.type === 'battle') {
+    const stored = await loadBattlePuzzle(supabase, puzzleId)
+    if (!stored) {
+      return <p>Puzzle not found.</p>
+    }
+
+    // Replay the player's moves so far (none on a first visit) to rebuild the battle.
+    const attempt = await loadBattleAttempt(supabase, puzzleId, user.id)
+    const { view } = runBattle(setupOf(stored.content), attempt.choices)
+
+    return (
+      <main style={{ padding: '2rem' }}>
+        <PlayBattle
+          puzzle={puzzleInfo(stored)}
+          initialView={view}
+          initialReveal={attempt.completed ? buildReveal(stored.content) : null}
+        />
+      </main>
+    )
+  }
+  
   if (puzzle.type === 'guess_the_mon') {
     const loaded = await loadGuessTheMon(supabase, puzzleId, user.id)
     if (!loaded) {

@@ -51,6 +51,18 @@ export default function Home() {
             Play Guess the Pokémon
           </Link>
         </article>
+
+          <article className={`${styles.card} ${styles.wide}`}>
+          <span className={styles.eyebrow}>Puzzle collection</span>
+          <h2 className={styles.cardTitle}>Battle puzzles</h2>
+          <p className={styles.cardText}>
+            Like a chess puzzle, but with Pokémon. Study both sets, predict the opponent, and find the only line of
+            moves that wins the battle before you run out of turns.
+          </p>
+          <Link href="/battle" className={styles.primaryButton}>
+            Browse battle puzzles
+          </Link>
+        </article>
       </section>
     </main>
   )

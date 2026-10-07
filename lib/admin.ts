@@ -1,0 +1,2 @@
+// MY account's user id. Puzzles need a creator_id (the puzzles table's foreign key), so the daily cron job and the battle puzzle builder both create puzzles as you.
+export const ADMIN_USER_ID = '790a1414-ed58-4554-a18b-b9c7c00c2155'

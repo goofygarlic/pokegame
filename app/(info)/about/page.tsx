@@ -69,6 +69,14 @@ export default function AboutPage() {
           and <a href="https://veekun.com" target="_blank" rel="noreferrer">Veekun</a>.
         </li>
         <li>
+          <strong>Battle simulation:</strong>{' '}
+          <a href="https://github.com/smogon/pokemon-showdown" target="_blank" rel="noreferrer">Pokémon Showdown</a>
+          &apos;s battle engine (MIT license), packaged by{' '}
+          <a href="https://github.com/pkmn/ps" target="_blank" rel="noreferrer">@pkmn/sim</a>, with damage estimates
+          from the{' '}
+          <a href="https://github.com/smogon/damage-calc" target="_blank" rel="noreferrer">Smogon damage calculator</a>.
+        </li>
+        <li>
           <strong>Fonts:</strong> Fraunces, Work Sans, and JetBrains Mono, via Google Fonts under the SIL Open Font
           License.
         </li>

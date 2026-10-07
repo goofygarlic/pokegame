@@ -2,12 +2,10 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpeciesVarieties } from '@/lib/pokeapi'
 import { isAllowedForm } from '@/lib/pokemon-forms'
+import { ADMIN_USER_ID } from '@/lib/admin'
  
 const MAX_DEX_NUMBER = 1025 // update as new generations are added to PokeAPI
- 
-// need creator_id to satisfy puzzles table's foreign key, use MY admin account.
-const ADMIN_USER_ID = '790a1414-ed58-4554-a18b-b9c7c00c2155'
- 
+  
 // One entry per daily game. Each game gets its own puzzle row every day.
 const DAILY_GAMES = [
   {
