@@ -97,6 +97,11 @@ function buildShareText(
   return `${header}\n${result}\n\n${grid}\n\n${puzzleUrl}`
 }
 
+// PokeAPI stores height in decimetres and weight in hectograms, so divide by 10 for metres and kilograms
+function fromTenths(value: number): string {
+  return String(value / 10)
+}
+
 function directionArrow(value: ExactOrDirection): string {
   if (value === 'higher') return ' ↑'
   if (value === 'lower') return ' ↓'
@@ -341,12 +346,12 @@ export default function PlayPokedle({
                   dataLabel="Gen"
                 />
                 <Cell
-                  label={`${g.attributes.height}m${directionArrow(g.comparison.height)}`}
+                  label={`${fromTenths(g.attributes.height)} m${directionArrow(g.comparison.height)}`}
                   status={statusClass(g.comparison.height)}
                   dataLabel="Height"
                 />
                 <Cell
-                  label={`${g.attributes.weight}kg${directionArrow(g.comparison.weight)}`}
+                  label={`${fromTenths(g.attributes.weight)} kg${directionArrow(g.comparison.weight)}`}
                   status={statusClass(g.comparison.weight)}
                   dataLabel="Weight"
                 />
