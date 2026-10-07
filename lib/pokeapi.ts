@@ -226,7 +226,8 @@ export async function getHintData(
   // Rows cached before `label` / `dexNumber` existed are refetched and overwritten,
   // so the cache updates itself without a migration.
   if (cached && typeof cached.data?.label === 'string' && typeof cached.data?.dexNumber === 'number') {
-    return cached.data as HintData
+    const data = cached.data as HintData
+    return { ...data, label: formLabel(data.name, data.speciesName, data.isDefaultForm) }
   }
  
   const hintData = await fetchHintDataFromPokeApi(slug)

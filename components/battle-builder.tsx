@@ -524,7 +524,7 @@ export default function BattleBuilder({ puzzles, initialDraft, initialId, loadEr
                             <span className={styles.lineMoves}>
                               {line.names.map((n, j) => (
                                 <span key={j} className={styles.lineMove}>
-                                  {n.tera ? `Tera ${n.name}` : n.name}
+                                  {choiceLabel(n)}
                                 </span>
                               ))}
                             </span>
