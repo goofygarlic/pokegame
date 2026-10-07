@@ -264,6 +264,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+.measurement {
+  text-transform: none;
+}
+
 .cellGood .cellValue {
   color: var(--good);
 }

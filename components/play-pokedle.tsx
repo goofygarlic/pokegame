@@ -117,10 +117,20 @@ function formatDex(dexNumber: number | undefined): string {
   return `No. ${String(dexNumber).padStart(3, '0')}`
 }
 
-function Cell({ label, status, dataLabel }: { label: string; status: StatusClass; dataLabel: string }) {
+function Cell({
+  label,
+  status,
+  dataLabel,
+  measurement = false,
+}: {
+  label: string
+  status: StatusClass
+  dataLabel: string
+  measurement?: boolean
+}) {
   return (
     <div className={`${styles.cell} ${styles[status]}`} data-label={dataLabel} role="cell">
-      <span className={styles.cellValue}>{label}</span>
+      <span className={`${styles.cellValue} ${measurement ? styles.measurement : ''}`}>{label}</span>
     </div>
   )
 }
@@ -349,11 +359,13 @@ export default function PlayPokedle({
                   label={`${fromTenths(g.attributes.height)} m${directionArrow(g.comparison.height)}`}
                   status={statusClass(g.comparison.height)}
                   dataLabel="Height"
+                  measurement
                 />
                 <Cell
                   label={`${fromTenths(g.attributes.weight)} kg${directionArrow(g.comparison.weight)}`}
                   status={statusClass(g.comparison.weight)}
                   dataLabel="Weight"
+                  measurement
                 />
                 <Cell label={g.attributes.color} status={statusClass(g.comparison.color)} dataLabel="Color" />
               </div>
