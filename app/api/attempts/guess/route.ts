@@ -23,10 +23,10 @@ const GENERATION_ORDER = [
 ]
  
 function compareType(guessType: string | undefined, answerTypes: string[], slot: 0 | 1): TypeComparison {
-  if (!guessType && !answerTypes[slot]) return 'correct' // both typeless in this slot
-  if (!guessType || !answerTypes[slot]) return 'absent'
-  if (guessType === answerTypes[slot]) return 'correct'
-  if (answerTypes.includes(guessType)) return 'present' // right type, wrong slot
+  const answerType = answerTypes[slot]
+  if (!guessType) return answerType ? 'absent' : 'correct'
+  if (guessType === answerType) return 'correct'
+  if (answerTypes.includes(guessType)) return 'present'
   return 'absent'
 }
  
